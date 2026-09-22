@@ -113,7 +113,8 @@ FEATURES = [
     "RestingECG", "MaxHR", "ExerciseAngina", "Oldpeak", "ST_Slope",
 ]
 TARGET = "HeartDisease"
-# Kaggle recodes missing values of these to 0; UCI Switzerland does the same for Cholesterol.
+# UCI records some missing values of these as 0 (all of Switzerland's cholesterol); Kaggle kept
+# those zeros, while it filled every '?' with a concrete value (see provenance.py).
 ZERO_MEANS_MISSING = ("RestingBP", "Cholesterol")
 
 
