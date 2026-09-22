@@ -24,3 +24,9 @@ def test_honest_estimates_renders(tmp_path):
     from heart_audit.plots import honest_estimates
     rows = [{"label": "a", "loso": 0.8, "lo": 0.75, "hi": 0.85, "cv": 0.88}]
     assert honest_estimates(rows, tmp_path / "h.png").exists()
+
+
+def test_paired_difference_tolerates_float_noise(tmp_path):
+    from heart_audit.plots import paired_difference
+    d = np.array([1 / 184, 1 / 184 + 1e-16, 0.0, -2 / 184])
+    assert paired_difference(d, "d", "t", tmp_path / "p.png").exists()

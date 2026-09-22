@@ -158,7 +158,7 @@ def effect_summary(rows: list[dict], path: Path) -> Path:
         ax.scatter([r["median"]], [yi], s=60, color=SERIES_1, edgecolor=SURFACE, linewidth=2, zorder=3)
         ax.text(max(r["hi"], r["median"]) + 0.4, yi, f"{r['median']:+.1f}", va="center", fontsize=9, color=TEXT)
     ax.set_yticks(y, [r["label"] for r in rows], fontsize=9, color=TEXT)
-    ax.set_xlabel("effect on the random forest's test accuracy (percentage points, median and central 95% over splits)",
+    ax.set_xlabel("change in random-forest test accuracy, percentage points (median, central 95% over splits)",
                   color=TEXT_2, fontsize=8.5)
     lo = min(r["lo"] for r in rows)
     hi = max(r["hi"] for r in rows)
@@ -172,7 +172,8 @@ def effect_summary(rows: list[dict], path: Path) -> Path:
 def paired_difference(diffs, label: str, title: str, path: Path) -> Path:
     """Histogram of a per-seed paired accuracy difference, one bin per attainable step."""
     d = np.asarray(diffs)
-    step = np.min(np.diff(np.unique(d))) if len(np.unique(d)) > 1 else 0.01
+    values = np.unique(np.round(d, 9))          # float noise must not create a tiny step
+    step = np.min(np.diff(values)) if len(values) > 1 else 0.01
     edges = np.arange(d.min() - step / 2, d.max() + step, step)
     fig, ax = plt.subplots(figsize=(8, 3.4), facecolor=SURFACE)
     _style(ax)
@@ -199,8 +200,9 @@ def site_dumbbell(sites: list[str], left: list[float], right: list[float], left_
     y = np.arange(len(sites))[::-1]
     for yi, a, b in zip(y, left, right):
         ax.plot([a, b], [yi, yi], color=GRID, linewidth=3, zorder=1)
-    ax.scatter(left, y, s=60, color=SERIES_2, edgecolor=SURFACE, linewidth=2, zorder=3, label=left_label)
-    ax.scatter(right, y, s=60, color=SERIES_1, edgecolor=SURFACE, linewidth=2, zorder=3, label=right_label)
+    ax.scatter(left, y, s=60, color=SERIES_1, edgecolor=SURFACE, linewidth=2, zorder=3, label=left_label)
+    ax.scatter(right, y, s=60, color=SERIES_2, edgecolor=SURFACE, linewidth=2, zorder=3, label=right_label)
+    ax.set_ylim(-0.7, len(sites) - 0.3)
     labels = [s if not notes else f"{s}\n{n}" for s, n in zip(sites, notes or [""] * len(sites))]
     ax.set_yticks(y, labels, fontsize=9, color=TEXT)
     ax.set_xlabel("AUC", color=TEXT_2, fontsize=9)
