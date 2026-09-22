@@ -106,3 +106,129 @@ def survey_practices(labels: list[str], counts: list[int], n: int, path: Path) -
     fig.savefig(path, dpi=160, facecolor=SURFACE)
     plt.close(fig)
     return path
+
+
+def _save(fig, path) -> Path:
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(path, dpi=160, facecolor=SURFACE)
+    plt.close(fig)
+    return path
+
+
+def fill_rule(panels: list[dict], path: Path) -> Path:
+    """Disease rate by value, filled vs observed. Each panel: title, values, filled, observed, n_filled, n_observed."""
+    fig, axes = plt.subplots(1, len(panels), figsize=(8, 3.6), facecolor=SURFACE, sharey=True)
+    for ax, p in zip(np.atleast_1d(axes), panels):
+        _style(ax)
+        x = np.arange(len(p["values"]))
+        w = 0.36
+        ax.bar(x - w / 2 - 0.02, p["filled"], w, color=SERIES_2, zorder=2)
+        ax.bar(x + w / 2 + 0.02, p["observed"], w, color=SERIES_1, zorder=2)
+        for xi, f, o, nf, no in zip(x, p["filled"], p["observed"], p["n_filled"], p["n_observed"]):
+            ax.text(xi - w / 2 - 0.02, f + 0.02, f"{f:.0%}\nn={nf}", ha="center", va="bottom", fontsize=8, color=TEXT)
+            ax.text(xi + w / 2 + 0.02, o + 0.02, f"{o:.0%}\nn={no}", ha="center", va="bottom", fontsize=8, color=TEXT)
+        ax.set_xticks(x, [str(v) for v in p["values"]], fontsize=9, color=TEXT)
+        ax.set_ylim(0, 1.3)
+        ax.yaxis.set_major_formatter(PercentFormatter(1.0, decimals=0))
+        ax.set_yticks([0, 0.5, 1.0])
+        ax.set_title(p["title"], loc="left", fontsize=10, color=TEXT)
+    np.atleast_1d(axes)[0].set_ylabel("share with heart disease", color=TEXT_2, fontsize=9)
+    handles = [plt.Rectangle((0, 0), 1, 1, color=SERIES_2), plt.Rectangle((0, 0), 1, 1, color=SERIES_1)]
+    fig.legend(handles, ["value filled in by the dataset author", "value recorded in the UCI source"],
+               loc="upper right", bbox_to_anchor=(0.98, 0.9), frameon=False, fontsize=9, ncol=2)
+    fig.suptitle("The filled-in values were decided by the diagnosis", x=0.02, ha="left",
+                 fontsize=12, color=TEXT, fontweight="bold")
+    fig.tight_layout(rect=(0, 0, 1, 0.86))
+    return _save(fig, path)
+
+
+def effect_summary(rows: list[dict], path: Path) -> Path:
+    """Dot + interval per practice: effect on RF accuracy in percentage points.
+    Each row: label, median, lo, hi, note (optional)."""
+    rows = sorted(rows, key=lambda r: r["median"])
+    fig, ax = plt.subplots(figsize=(8, 0.55 * len(rows) + 1.4), facecolor=SURFACE)
+    _style(ax)
+    ax.grid(axis="y", visible=False)
+    ax.grid(axis="x", color=GRID, linewidth=0.8)
+    ax.axvline(0, color=MUTED, linewidth=1, zorder=1)
+    y = np.arange(len(rows))
+    for yi, r in zip(y, rows):
+        ax.plot([r["lo"], r["hi"]], [yi, yi], color=SERIES_1, linewidth=2, solid_capstyle="round", zorder=2)
+        ax.scatter([r["median"]], [yi], s=60, color=SERIES_1, edgecolor=SURFACE, linewidth=2, zorder=3)
+        ax.text(max(r["hi"], r["median"]) + 0.4, yi, f"{r['median']:+.1f}", va="center", fontsize=9, color=TEXT)
+    ax.set_yticks(y, [r["label"] for r in rows], fontsize=9, color=TEXT)
+    ax.set_xlabel("effect on the random forest's test accuracy (percentage points, median and central 95% over splits)",
+                  color=TEXT_2, fontsize=8.5)
+    lo = min(r["lo"] for r in rows)
+    hi = max(r["hi"] for r in rows)
+    ax.set_xlim(min(lo, 0) - 1, hi + 2.5)
+    fig.suptitle("What each practice adds to the published accuracy", x=0.02, ha="left", fontsize=12,
+                 color=TEXT, fontweight="bold")
+    fig.tight_layout(rect=(0, 0, 1, 0.93))
+    return _save(fig, path)
+
+
+def paired_difference(diffs, label: str, title: str, path: Path) -> Path:
+    """Histogram of a per-seed paired accuracy difference, one bin per attainable step."""
+    d = np.asarray(diffs)
+    step = np.min(np.diff(np.unique(d))) if len(np.unique(d)) > 1 else 0.01
+    edges = np.arange(d.min() - step / 2, d.max() + step, step)
+    fig, ax = plt.subplots(figsize=(8, 3.4), facecolor=SURFACE)
+    _style(ax)
+    ax.hist(d, bins=edges, color=SERIES_1, edgecolor=SURFACE, linewidth=1, zorder=2)
+    ax.axvline(0, color=TEXT, linewidth=1.2, linestyle=(0, (4, 3)), zorder=3)
+    ax.xaxis.set_major_formatter(PercentFormatter(1.0, decimals=0))
+    ax.set_xlabel(label, color=TEXT_2, fontsize=9)
+    ax.set_ylabel("split seeds", color=TEXT_2, fontsize=9)
+    ahead, behind = (d > 0).mean(), (d < 0).mean()
+    ax.text(0.99, 0.95, f"above 0 on {ahead:.0%} of seeds\nbelow 0 on {behind:.0%}\nequal on {1 - ahead - behind:.0%}",
+            transform=ax.transAxes, ha="right", va="top", fontsize=9, color=TEXT)
+    fig.suptitle(title, x=0.02, ha="left", fontsize=12, color=TEXT, fontweight="bold")
+    fig.tight_layout(rect=(0, 0, 1, 0.92))
+    return _save(fig, path)
+
+
+def site_dumbbell(sites: list[str], left: list[float], right: list[float], left_label: str, right_label: str,
+                  title: str, path: Path, notes: list[str] | None = None) -> Path:
+    """Per-site AUC under two schemes, joined by a line."""
+    fig, ax = plt.subplots(figsize=(8, 0.6 * len(sites) + 1.6), facecolor=SURFACE)
+    _style(ax)
+    ax.grid(axis="y", visible=False)
+    ax.grid(axis="x", color=GRID, linewidth=0.8)
+    y = np.arange(len(sites))[::-1]
+    for yi, a, b in zip(y, left, right):
+        ax.plot([a, b], [yi, yi], color=GRID, linewidth=3, zorder=1)
+    ax.scatter(left, y, s=60, color=SERIES_2, edgecolor=SURFACE, linewidth=2, zorder=3, label=left_label)
+    ax.scatter(right, y, s=60, color=SERIES_1, edgecolor=SURFACE, linewidth=2, zorder=3, label=right_label)
+    labels = [s if not notes else f"{s}\n{n}" for s, n in zip(sites, notes or [""] * len(sites))]
+    ax.set_yticks(y, labels, fontsize=9, color=TEXT)
+    ax.set_xlabel("AUC", color=TEXT_2, fontsize=9)
+    ax.legend(frameon=False, fontsize=9, loc="lower left", bbox_to_anchor=(0, 1.0), ncol=2)
+    fig.suptitle(title, x=0.02, ha="left", fontsize=12, color=TEXT, fontweight="bold")
+    fig.tight_layout(rect=(0, 0, 1, 0.9))
+    return _save(fig, path)
+
+
+def honest_estimates(rows: list[dict], path: Path) -> Path:
+    """Per model/arm: LOSO within-site AUC with its interval, against random-CV pooled AUC.
+    Each row: label, loso, lo, hi, cv."""
+    fig, ax = plt.subplots(figsize=(8, 0.5 * len(rows) + 1.8), facecolor=SURFACE)
+    _style(ax)
+    ax.grid(axis="y", visible=False)
+    ax.grid(axis="x", color=GRID, linewidth=0.8)
+    y = np.arange(len(rows))[::-1]
+    for yi, r in zip(y, rows):
+        ax.plot([r["lo"], r["hi"]], [yi, yi], color=SERIES_1, linewidth=2, solid_capstyle="round", zorder=2)
+        ax.plot([r["loso"], r["cv"]], [yi, yi], color=GRID, linewidth=3, zorder=1)
+    ax.scatter([r["loso"] for r in rows], y, s=60, color=SERIES_1, edgecolor=SURFACE, linewidth=2, zorder=3,
+               label="hospital held out (within-site AUC, 95% CI)")
+    ax.scatter([r["cv"] for r in rows], y, s=60, color=SERIES_2, edgecolor=SURFACE, linewidth=2, zorder=3,
+               label="random 10-fold x 5 (pooled AUC)")
+    ax.set_yticks(y, [r["label"] for r in rows], fontsize=9, color=TEXT)
+    ax.set_xlabel("AUC", color=TEXT_2, fontsize=9)
+    ax.legend(frameon=False, fontsize=9, loc="lower left", bbox_to_anchor=(0, 1.0), ncol=2)
+    fig.suptitle("What the models are worth on a hospital they have not seen", x=0.02, ha="left",
+                 fontsize=12, color=TEXT, fontweight="bold")
+    fig.tight_layout(rect=(0, 0, 1, 0.9))
+    return _save(fig, path)
