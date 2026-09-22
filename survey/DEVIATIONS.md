@@ -62,3 +62,18 @@ disagreement-resolution step. Every override is listed in `RESOLUTIONS` in
 **Caveat on reliability:** both coders are instances of the same language model working from
 the same protocol. The 99.6% agreement (249/250 field values) measures how clear the rubric is
 and how consistently it is applied. It is not agreement between independent human judges.
+
+## D4 — Blank `features_dropped` counts as a value (2026-09-22)
+
+**When:** at the first aggregation, after coding was locked.
+
+The modal rule says "blank values ignored". For `features_dropped`, blank is the coded value
+"no feature dropped" (27 of 30 notebooks), not a missing value. Ignoring it made the mode a
+column list used by 1 notebook. Blank is treated as `none`. This changes only this field.
+
+## D2 values used
+
+The best shown held-out accuracy of the headline model, taken from the coders' notes, for the
+7 notebooks where it differs from the pre-registered value: positions 3 (0.9444), 6 (0.8674),
+22 (0.8785), 28 (0.9130), 48 (0.8611; a different split seed), 54 (0.8453) and 55 (0.86,
+full-feature model). The list is `D2_BEST_SHOWN` in `scripts/summarise_survey.py`.

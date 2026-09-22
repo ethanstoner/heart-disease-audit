@@ -1,0 +1,172 @@
+{
+ "primary": {
+  "modal": {
+   "metric_name": "accuracy",
+   "value_source": "output",
+   "eval_design": "single_split",
+   "test_size": 0.2,
+   "stratify": "no",
+   "seed_fixed": "yes",
+   "models": [
+    "decision_tree",
+    "logistic_regression",
+    "random_forest",
+    "svm"
+   ],
+   "headline_model": "random_forest",
+   "n_models": 1.0,
+   "best_of_n": "no",
+   "tuning": "none",
+   "hyperparams": "default",
+   "fit_before_split": "yes",
+   "scaling": "standard",
+   "encoding": "onehot",
+   "chol_zero": "ignored",
+   "chol_zero_before_split": "na",
+   "outlier_removal": "no",
+   "outlier_before_split": "na",
+   "resampling": "none",
+   "features_dropped": "none",
+   "dedup": "none",
+   "source_imputation_mentioned": "no"
+  },
+  "shares": {
+   "metric_name": "30/30",
+   "value_source": "30/30",
+   "eval_design": "27/30",
+   "test_size": "23/27",
+   "stratify": "23/30",
+   "seed_fixed": "26/30",
+   "headline_model": "10/30",
+   "n_models": "13/30",
+   "best_of_n": "20/30",
+   "tuning": "22/30",
+   "hyperparams": "17/30",
+   "fit_before_split": "19/30",
+   "scaling": "20/30",
+   "encoding": "20/30",
+   "chol_zero": "23/30",
+   "chol_zero_before_split": "24/30",
+   "outlier_removal": "21/30",
+   "outlier_before_split": "21/30",
+   "resampling": "28/30",
+   "features_dropped": "27/30",
+   "dedup": "26/30",
+   "source_imputation_mentioned": "30/30"
+  },
+  "ties": [],
+  "model_counts": {
+   "random_forest": 18,
+   "logistic_regression": 14,
+   "svm": 13,
+   "decision_tree": 10,
+   "knn": 9,
+   "xgboost": 4,
+   "mlp": 3,
+   "other": 2,
+   "naive_bayes": 2,
+   "lightgbm": 1
+  },
+  "accuracy": {
+   "n": 30,
+   "median": 0.861,
+   "iqr": [
+    0.8205,
+    0.8803
+   ],
+   "min": 0.6961,
+   "max": 0.9058
+  }
+ },
+ "sensitivity_literal_e4": {
+  "modal": {
+   "metric_name": "accuracy",
+   "value_source": "output",
+   "eval_design": "single_split",
+   "test_size": 0.2,
+   "stratify": "no",
+   "seed_fixed": "yes",
+   "models": [
+    "decision_tree",
+    "logistic_regression",
+    "random_forest",
+    "svm"
+   ],
+   "headline_model": "random_forest",
+   "n_models": 1.0,
+   "best_of_n": "no",
+   "tuning": "none",
+   "hyperparams": "set",
+   "fit_before_split": "yes",
+   "scaling": "standard",
+   "encoding": "onehot",
+   "chol_zero": "ignored",
+   "chol_zero_before_split": "na",
+   "outlier_removal": "no",
+   "outlier_before_split": "na",
+   "resampling": "none",
+   "features_dropped": "none",
+   "dedup": "none",
+   "source_imputation_mentioned": "no"
+  },
+  "shares": {
+   "metric_name": "30/30",
+   "value_source": "30/30",
+   "eval_design": "27/30",
+   "test_size": "23/27",
+   "stratify": "25/30",
+   "seed_fixed": "26/30",
+   "headline_model": "8/30",
+   "n_models": "12/30",
+   "best_of_n": "21/30",
+   "tuning": "22/30",
+   "hyperparams": "15/30",
+   "fit_before_split": "16/30",
+   "scaling": "17/30",
+   "encoding": "20/30",
+   "chol_zero": "25/30",
+   "chol_zero_before_split": "26/30",
+   "outlier_removal": "22/30",
+   "outlier_before_split": "22/30",
+   "resampling": "28/30",
+   "features_dropped": "28/30",
+   "dedup": "27/30",
+   "source_imputation_mentioned": "30/30"
+  },
+  "ties": [
+   "n_models",
+   "hyperparams"
+  ],
+  "model_counts": {
+   "random_forest": 19,
+   "logistic_regression": 12,
+   "svm": 12,
+   "decision_tree": 11,
+   "knn": 7,
+   "xgboost": 6,
+   "mlp": 3,
+   "other": 2,
+   "naive_bayes": 1
+  },
+  "accuracy": {
+   "n": 30,
+   "median": 0.8632,
+   "iqr": [
+    0.8322,
+    0.8788
+   ],
+   "min": 0.6961,
+   "max": 0.9058
+  }
+ },
+ "sensitivity_d2_best_shown_accuracy": {
+  "n": 30,
+  "median": 0.8658,
+  "iqr": [
+   0.8587,
+   0.8804
+  ],
+  "min": 0.6961,
+  "max": 0.9444
+ }
+}
