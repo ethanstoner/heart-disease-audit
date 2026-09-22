@@ -2,8 +2,8 @@ import numpy as np
 import pytest
 
 from heart_audit.evaluation import (
-    auc, bootstrap_auc_ci, calibration, delong_auc_ci, holm, mcnemar_exact, nadeau_bengio,
-    paired_auc_diff, stratified_bootstrap, winners_curse,
+    _auc_rows, auc, bootstrap_auc_ci, calibration, delong_auc_ci, holm, mcnemar_exact, nadeau_bengio,
+    paired_auc_diff, site_weighted_auc, site_weighted_auc_ci, stratified_bootstrap, winners_curse,
 )
 
 
@@ -82,3 +82,23 @@ def test_calibration_recovers_known_miscalibration():
     assert ok[0] == pytest.approx(0, abs=0.05) and ok[1] == pytest.approx(1, abs=0.05)
     overconfident = calibration(y, 1 / (1 + np.exp(-2 * true_logit)))
     assert overconfident[1] == pytest.approx(0.5, abs=0.03)
+
+
+def test_vectorised_auc_matches_sklearn_with_ties():
+    rng = np.random.default_rng(8)
+    y = rng.integers(0, 2, (30, 80))
+    s = np.round(rng.normal(0, 1, (30, 80)) + y, 1)
+    assert _auc_rows(y, s) == pytest.approx([auc(yy, ss) for yy, ss in zip(y, s)])
+
+
+def test_site_weighted_auc_ignores_between_site_offsets():
+    rng = np.random.default_rng(9)
+    y = rng.integers(0, 2, 400)
+    sites = np.repeat(["a", "b"], 200)
+    s = y + rng.normal(0, 1, 400)
+    shifted = s + np.where(sites == "a", 5.0, 0.0)      # a per-site offset changes pooled AUC only
+    assert site_weighted_auc(y, shifted, sites) == pytest.approx(site_weighted_auc(y, s, sites))
+    assert site_weighted_auc(y, s, sites) == pytest.approx(
+        (auc(y[:200], s[:200]) + auc(y[200:], s[200:])) / 2)
+    a, lo, hi = site_weighted_auc_ci(y, s, sites, 500, seed=1)
+    assert lo < a < hi

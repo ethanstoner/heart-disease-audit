@@ -21,10 +21,20 @@ def auc(y, score) -> float:
     return float(roc_auc_score(y, score))
 
 
+def _auc_rows(y_rows: np.ndarray, s_rows: np.ndarray) -> np.ndarray:
+    """AUC of every row of a (B, n) resample, by the Mann-Whitney rank formula (ties averaged)."""
+    ranks = stats.rankdata(s_rows, axis=1)
+    pos = y_rows == 1
+    n1 = pos.sum(axis=1)
+    n0 = y_rows.shape[1] - n1
+    return ((ranks * pos).sum(axis=1) - n1 * (n1 + 1) / 2) / (n1 * n0)
+
+
 def bootstrap_auc_ci(y, score, n_boot: int, seed: int, level: float = 0.95) -> tuple[float, float, float]:
     """AUC with a stratified percentile bootstrap interval (patients are the resampling unit)."""
     y, score = np.asarray(y), np.asarray(score)
-    boots = [auc(y[i], score[i]) for i in stratified_bootstrap(y, n_boot, seed)]
+    idx = stratified_bootstrap(y, n_boot, seed)
+    boots = _auc_rows(y[idx], score[idx])
     a = (1 - level) / 2 * 100
     return auc(y, score), *np.percentile(boots, [a, 100 - a])
 
@@ -32,9 +42,32 @@ def bootstrap_auc_ci(y, score, n_boot: int, seed: int, level: float = 0.95) -> t
 def paired_auc_diff(y, score_a, score_b, n_boot: int, seed: int, level: float = 0.95) -> tuple[float, float, float]:
     """AUC(a) - AUC(b) on the same patients, with a paired stratified percentile bootstrap."""
     y, score_a, score_b = np.asarray(y), np.asarray(score_a), np.asarray(score_b)
-    boots = [auc(y[i], score_a[i]) - auc(y[i], score_b[i]) for i in stratified_bootstrap(y, n_boot, seed)]
+    idx = stratified_bootstrap(y, n_boot, seed)
+    boots = _auc_rows(y[idx], score_a[idx]) - _auc_rows(y[idx], score_b[idx])
     a = (1 - level) / 2 * 100
     return auc(y, score_a) - auc(y, score_b), *np.percentile(boots, [a, 100 - a])
+
+
+def site_weighted_auc(y, score, sites) -> float:
+    """n-weighted mean of within-site AUCs (the LOSO discrimination estimate; deviation D6)."""
+    y, score, sites = np.asarray(y), np.asarray(score), np.asarray(sites)
+    total = 0.0
+    for s in np.unique(sites):
+        m = sites == s
+        total += auc(y[m], score[m]) * m.sum()
+    return total / len(y)
+
+
+def site_weighted_auc_ci(y, score, sites, n_boot: int, seed: int, level: float = 0.95) -> tuple[float, float, float]:
+    """site_weighted_auc with a percentile bootstrap stratified by (site, class)."""
+    y, score, sites = np.asarray(y), np.asarray(score), np.asarray(sites)
+    boots = np.zeros(n_boot)
+    for k, s in enumerate(np.unique(sites)):
+        rows = np.flatnonzero(sites == s)
+        idx = rows[stratified_bootstrap(y[rows], n_boot, seed + k)]
+        boots += _auc_rows(y[idx], score[idx]) * len(rows)
+    a = (1 - level) / 2 * 100
+    return site_weighted_auc(y, score, sites), *np.percentile(boots / len(y), [a, 100 - a])
 
 
 def mcnemar_exact(y, pred_a, pred_b) -> float:
