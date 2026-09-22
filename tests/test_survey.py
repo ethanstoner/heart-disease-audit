@@ -1,6 +1,6 @@
 import pandas as pd
 
-from heart_audit.survey import SEED, modal_pipeline, screening_order
+from heart_audit.survey import RUBRIC, SEED, modal_pipeline, rubric_violations, screening_order
 
 
 def _item(repo, path, fork=False):
@@ -44,3 +44,19 @@ def test_models_fall_back_to_top_four_with_ties():
     modal, _ = modal_pipeline(coding)
     # a, c, e appear twice; b, d, f once -> fewer than 2 reach 50%; top 4 incl. ties at 4th
     assert modal["models"] == ["a", "b", "c", "d", "e", "f"]
+
+
+def test_rubric_violations_are_reported():
+    good = dict(
+        metric_name="accuracy", metric_value=0.85, accuracy_value=None, value_source="output",
+        eval_design="single_split", test_size=0.2, stratify="no", seed_fixed="yes",
+        models="knn;svm", headline_model="knn", n_models=2, best_of_n="yes", tuning="none",
+        hyperparams="default", fit_before_split="na", scaling="standard", encoding="onehot",
+        chol_zero="ignored", chol_zero_before_split="na", outlier_removal="no",
+        outlier_before_split="na", resampling="none", features_dropped="", dedup="none",
+        source_imputation_mentioned="no",
+    )
+    assert set(good) == set(RUBRIC)
+    assert rubric_violations(good) == []
+    bad = dict(good, metric_value=85.0, models="knn;catboostz", dedup="maybe")
+    assert sorted(v.split(":")[0] for v in rubric_violations(bad)) == ["dedup", "metric_value", "models"]

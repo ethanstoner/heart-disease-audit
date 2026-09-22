@@ -44,3 +44,69 @@ def modal_pipeline(coding: pd.DataFrame) -> tuple[dict, list[str]]:
             ties.append(col)
         modal[col] = next(v for v in values if v in top)
     return modal, ties
+
+
+MODEL_TYPES = {
+    "logistic_regression", "knn", "svm", "decision_tree", "random_forest", "gradient_boosting",
+    "xgboost", "lightgbm", "catboost", "naive_bayes", "mlp", "other",
+}
+YES_NO = {"yes", "no"}
+YES_NO_NA = {"yes", "no", "na"}
+
+# field -> allowed values; "unit" = float in [0, 1]; "fraction" = float in (0, 1) or blank;
+# "count" = positive int; "models" = ;-separated MODEL_TYPES; "free" = any string or blank
+RUBRIC = {
+    "metric_name": {"accuracy", "auc", "f1", "other"},
+    "metric_value": "unit",
+    "accuracy_value": "unit_or_blank",
+    "value_source": {"output", "text"},
+    "eval_design": {"single_split", "cv", "both"},
+    "test_size": "fraction",
+    "stratify": YES_NO_NA,
+    "seed_fixed": YES_NO,
+    "models": "models",
+    "headline_model": MODEL_TYPES,
+    "n_models": "count",
+    "best_of_n": YES_NO,
+    "tuning": {"none", "grid", "random", "other"},
+    "hyperparams": {"default", "set"},
+    "fit_before_split": YES_NO_NA,
+    "scaling": {"standard", "minmax", "none", "other"},
+    "encoding": {"onehot", "label", "mixed", "none"},
+    "chol_zero": {"ignored", "imputed", "dropped", "other"},
+    "chol_zero_before_split": YES_NO_NA,
+    "outlier_removal": YES_NO,
+    "outlier_before_split": YES_NO_NA,
+    "resampling": {"none", "smote", "other"},
+    "features_dropped": "free",
+    "dedup": {"dropped", "checked", "none"},
+    "source_imputation_mentioned": YES_NO,
+}
+
+
+def _blank(v) -> bool:
+    return v is None or v == "" or (isinstance(v, float) and np.isnan(v))
+
+
+def rubric_violations(coding: dict) -> list[str]:
+    """Every field whose value is outside the protocol's allowed set, as 'field: value'."""
+    out = []
+    for field, allowed in RUBRIC.items():
+        v = coding.get(field)
+        if allowed == "free":
+            ok = True
+        elif allowed == "unit":
+            ok = isinstance(v, (int, float)) and not _blank(v) and 0 <= v <= 1
+        elif allowed == "unit_or_blank":
+            ok = _blank(v) or (isinstance(v, (int, float)) and 0 <= v <= 1)
+        elif allowed == "fraction":
+            ok = _blank(v) or (isinstance(v, (int, float)) and 0 < v < 1)
+        elif allowed == "count":
+            ok = isinstance(v, (int, np.integer)) and v >= 1
+        elif allowed == "models":
+            ok = isinstance(v, str) and v != "" and set(v.split(";")) <= MODEL_TYPES
+        else:
+            ok = v in allowed
+        if not ok:
+            out.append(f"{field}: {v!r}")
+    return out
