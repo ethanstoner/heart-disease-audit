@@ -1,9 +1,10 @@
 # Heart Disease Prediction: An Audit
 
 The Kaggle "Heart Failure Prediction" CSV is one of the most-used tabular datasets on GitHub.
-Published notebooks report around 86% accuracy on it. This project finds that **the CSV's
-missing values were filled in from the diagnosis itself**, which the dataset's description
-never mentions, and that about 7 points of that accuracy come from those filled values.
+Published notebooks report around 86% accuracy on it. This project finds that **every missing
+value in the source data was filled in, and in four columns the filled value was decided by the
+diagnosis itself**. The dataset's description never mentions either. About 7 points of the
+reported accuracy come from those filled values.
 
 ![Filled-in values decided by the diagnosis](images/fill_rule.png)
 
@@ -18,7 +19,7 @@ experiment ran.
 - The CSV (918 rows) is the four UCI heart-disease files (920 rows) minus their 2 exact
   duplicates. The author's documented arithmetic (1,190 − 272 = 918) adds Statlog, and all 270
   Statlog rows are copies of Cleveland rows.
-- The UCI files have 662 missing values; the published CSV has none. The dataset description
+- The UCI files have 662 missing values in the 11 columns the CSV keeps; the published CSV has none. The dataset description
   documents the row arithmetic but never mentions missing values, `?`, imputation or filling
   (checked through Kaggle's metadata API on 2026-09-22; see
   `results/kaggle_description_check.json`).
@@ -26,12 +27,17 @@ experiment ran.
   one-to-one with their UCI source. ST_Slope is left out of the match, and the pairs agree on it
   610 out of 610 times. The matcher recovers 644 filled cells.
 - **Every filled ST_Slope is `Flat` for a patient with heart disease (111 of 111) and `Up` for a
-  patient without (191 of 191).** Filled FastingBS (89 of 89) and ExerciseAngina (53 of 53)
-  follow the same rule. Filled Oldpeak and Cholesterol values share no value between the two
-  classes.
-- Reverting those 644 cells to missing and imputing them honestly inside the pipeline lowers
-  the typical published pipeline's median random-forest accuracy from 86.4% to 79.3%: a median
-  paired drop of **7.1 points** (central 95% over 1,000 splits: 2.2 to 12.5).
+  patient without (191 of 191).** Filled FastingBS (89 of 89, 74 of them from Switzerland) and
+  ExerciseAngina (53 of 53) follow the same rule. Filled Oldpeak values don't overlap between the
+  classes (−0.1 to 0.4 without disease, 0.7 to 1.9 with). Together these four columns hold 504 of
+  the 644 filled cells. The filled RestingBP, MaxHR and Cholesterol values show no clean rule.
+- The rule does not come from how rows were matched. With the diagnosis left out of the match
+  key, 904 rows still pair up, their diagnoses agree on every one, and all 296 filled slopes
+  follow the rule (`tests/test_provenance.py`).
+- Take the typical published pipeline, with missing values imputed from training rows only.
+  Reverting the 644 filled cells to missing lowers its median random-forest accuracy from 86.4%
+  to 79.3%: a median paired drop of **7.1 points** (central 95% over 1,000 splits: 2.2 to
+  12.5).
 
 This shows what the filled values do. It does not identify how they were produced.
 
@@ -82,13 +88,15 @@ only inside the training hospitals.
   under-predicts risk in Switzerland (calibration intercept +2.65) and over-predicts it in
   Hungary (−0.84). AUC does not show this.
 - No model is significantly better than logistic regression after Holm correction (corrected
-  resampled t-test). In arm A, XGBoost and the MLP are significantly worse.
+  resampled t-test on the 10×5 random-CV control; with held-out hospitals, the intervals simply
+  overlap). In arm A, XGBoost and the MLP are significantly worse.
 
 ## Pre-registration scorecard
 
 Predictions are in `analysis/PREDICTIONS.md` (teardown and baseline) and in the survey
 protocol. Deviations are in `analysis/DEVIATIONS.md` (D5, D6) and `survey/DEVIATIONS.md`
-(D1 to D4). 14 of 15 predictions were supported and 1 was falsified.
+(D1 to D4). Counting P1.1 once per column, 14 of 15 predictions were supported and 1 was
+falsified.
 
 | Prediction | Result |
 |---|---|

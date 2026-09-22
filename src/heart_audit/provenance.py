@@ -17,18 +17,18 @@ _CODES = {"M": 1, "F": 0, "TA": 1, "ATA": 2, "NAP": 3, "ASY": 4,
           "Normal": 0, "ST": 1, "LVH": 2, "Y": 1, "N": 0}
 
 
-def _numeric_key(df: pd.DataFrame) -> np.ndarray:
+def _numeric_key(df: pd.DataFrame, key: list[str]) -> np.ndarray:
     cols = []
-    for col in MATCH_KEY:
+    for col in key:
         s = df[col]
         s = s.astype(float) if s.dtype.kind in "biuf" else s.map(_CODES).astype(float)
         cols.append(s.round(1).to_numpy())
     return np.column_stack(cols)
 
 
-def _compatible(kaggle: pd.DataFrame, uci: pd.DataFrame) -> np.ndarray:
+def _compatible(kaggle: pd.DataFrame, uci: pd.DataFrame, key: list[str]) -> np.ndarray:
     """Boolean matrix [uci row, kaggle row]."""
-    u, k = _numeric_key(uci), _numeric_key(kaggle)
+    u, k = _numeric_key(uci, key), _numeric_key(kaggle, key)
     ok = np.ones((len(u), len(k)), dtype=bool)
     for j in range(u.shape[1]):
         recorded = ~np.isnan(u[:, j])
@@ -36,14 +36,14 @@ def _compatible(kaggle: pd.DataFrame, uci: pd.DataFrame) -> np.ndarray:
     return ok
 
 
-def match_sources(kaggle: pd.DataFrame, uci: pd.DataFrame) -> pd.DataFrame:
+def match_sources(kaggle: pd.DataFrame, uci: pd.DataFrame, key: list[str] = MATCH_KEY) -> pd.DataFrame:
     """One row per Kaggle row, in order.
 
     Columns: n_candidates (compatible UCI rows), source ('unknown' when there is no candidate
     or candidates span sources), uci_row and uci_slope (set only for one-to-one pairs),
     kaggle_slope.
     """
-    ok = _compatible(kaggle, uci)
+    ok = _compatible(kaggle, uci, key)
     n_per_kaggle, n_per_uci = ok.sum(axis=0), ok.sum(axis=1)
     sources = uci["source"].to_numpy()
     uci_slope = uci["ST_Slope"].to_numpy()

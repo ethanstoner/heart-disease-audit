@@ -3,7 +3,7 @@ import pandas as pd
 import pytest
 
 from heart_audit.data import FEATURES, TARGET, load_kaggle918, load_uci920, to_kaggle_schema
-from heart_audit.provenance import filled_cells, filled_slopes, match_sources, slope_disagreements
+from heart_audit.provenance import MATCH_KEY, filled_cells, filled_slopes, match_sources, slope_disagreements
 
 
 def _row(age, chol, slope, source=None, fbs=0.0):
@@ -93,3 +93,17 @@ def test_every_recovered_missing_value_was_filled(frames, real):
         "MaxHR": 53, "ExerciseAngina": 53, "Cholesterol": 28, "RestingECG": 2,
     }
     assert kaggle.isna().sum().sum() == 0
+
+
+def test_label_rule_survives_leaving_the_label_out_of_the_match(frames):
+    """Matching without HeartDisease: the pairing cannot manufacture a link between filled values and the label."""
+    kaggle, uci = frames
+    no_label = [c for c in MATCH_KEY if c != TARGET]
+    m = match_sources(kaggle, uci, key=no_label)
+    paired = m["uci_row"].notna().to_numpy()
+    uci_y = uci[TARGET].to_numpy()[m.loc[paired, "uci_row"].astype(int)]
+    assert (kaggle[TARGET].to_numpy()[paired] == uci_y).all()          # labels agree, unprompted
+    slope = filled_cells(kaggle, uci, m).query("column == 'ST_Slope'")
+    y = kaggle[TARGET].to_numpy()[slope["kaggle_row"]]
+    assert len(slope) == 296 and paired.sum() == 904
+    assert ((slope["kaggle_value"] == "Flat") == (y == 1)).all()
