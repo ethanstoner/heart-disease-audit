@@ -1,9 +1,12 @@
 import numpy as np
+import pandas as pd
 import pytest
 from sklearn.model_selection import train_test_split
 
-from heart_audit.conventional import HEADLINE, MODELS, reproduction_gate, run_conventional, split_and_scale
-from heart_audit.data import TARGET, load_kaggle918
+from heart_audit.conventional import (
+    HEADLINE, MODELS, accuracy_table, impute, reproduction_gate, run_conventional, run_seeds, split_and_scale,
+)
+from heart_audit.data import PROJECT_ROOT, TARGET, load_kaggle918
 
 
 @pytest.fixture(scope="module")
@@ -55,3 +58,47 @@ def test_reproduction_gate():
     assert lo == pytest.approx(np.percentile(accs, 2.5)) and hi == pytest.approx(np.percentile(accs, 97.5))
     assert passed
     assert not reproduction_gate(accs, 0.99)[2]
+
+
+def test_default_run_matches_committed_control(kaggle):
+    committed = pd.read_csv(PROJECT_ROOT / "results" / "control_seeds.csv").head(3)
+    for row in committed.to_dict("records"):
+        acc = run_conventional(kaggle, int(row["seed"])).accuracy
+        assert all(acc[m] == pytest.approx(row[m]) for m in MODELS)
+
+
+def test_train_scope_imputation_never_sees_test_rows(kaggle):
+    seed = 9
+    _, test_idx = train_test_split(np.arange(len(kaggle)), test_size=0.2, random_state=seed)
+    train_idx = np.setdiff1d(np.arange(len(kaggle)), test_idx)
+    planted = kaggle.copy()
+    planted.loc[planted.index[test_idx[:40]], "Cholesterol"] = 9000
+    zero = planted["Cholesterol"].eq(0).to_numpy()
+    imputed_train = impute(planted, train_idx)
+    imputed_full = impute(planted, np.arange(len(planted)))
+    expected = planted["Cholesterol"].iloc[train_idx][~zero[train_idx]].median()
+    assert (imputed_train["Cholesterol"][zero] == expected).all()
+    assert (imputed_full["Cholesterol"][zero] > expected).all()
+
+
+def test_missing_values_require_an_impute_scope(kaggle):
+    holed = kaggle.copy()
+    holed.loc[holed.index[0], "MaxHR"] = np.nan
+    with pytest.raises(ValueError):
+        run_conventional(holed, 1)
+    r = run_conventional(holed, 1, impute_scope="train", models=("random_forest",))
+    assert set(r.accuracy) == {"random_forest"}
+
+
+def test_grouped_split_keeps_groups_together(kaggle):
+    groups = np.arange(len(kaggle)) // 2
+    r = run_conventional(kaggle, 4, groups=groups, models=("logistic_regression",))
+    test_groups = set(groups[r.test_index])
+    train_groups = set(groups[np.setdiff1d(np.arange(len(kaggle)), r.test_index)])
+    assert not test_groups & train_groups
+
+
+def test_run_seeds_preserves_order(kaggle):
+    out = run_seeds(kaggle, [5, 3], n_jobs=2, models=("decision_tree",))
+    assert [r.seed for r in out] == [5, 3]
+    assert list(accuracy_table(out).columns) == ["seed", "decision_tree"]
