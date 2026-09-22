@@ -6,6 +6,8 @@ import http.client
 import urllib.request
 from pathlib import Path
 
+import pandas as pd
+
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 RAW_DIR = PROJECT_ROOT / "data" / "raw"
 
@@ -94,3 +96,67 @@ def fetch_raw(raw_dir: Path = RAW_DIR) -> Path:
             _download_first_valid(urls, algorithm, digest, dest)
         verify(dest, algorithm, digest)
     return raw_dir
+
+
+UCI_COLUMNS = [
+    "age", "sex", "cp", "trestbps", "chol", "fbs", "restecg",
+    "thalach", "exang", "oldpeak", "slope", "ca", "thal", "num",
+]
+SOURCES = {
+    "processed.cleveland.data": "cleveland",
+    "processed.hungarian.data": "hungary",
+    "processed.switzerland.data": "switzerland",
+    "processed.va.data": "va",
+}
+FEATURES = [
+    "Age", "Sex", "ChestPainType", "RestingBP", "Cholesterol", "FastingBS",
+    "RestingECG", "MaxHR", "ExerciseAngina", "Oldpeak", "ST_Slope",
+]
+TARGET = "HeartDisease"
+# Kaggle recodes missing values of these to 0; UCI Switzerland does the same for Cholesterol.
+ZERO_MEANS_MISSING = ("RestingBP", "Cholesterol")
+
+
+def load_uci920(raw_dir: Path = RAW_DIR) -> pd.DataFrame:
+    """The four UCI files as recorded ('?' read as NaN), with a `source` column."""
+    raw_dir = fetch_raw(raw_dir)
+    frames = [
+        pd.read_csv(raw_dir / name, header=None, names=UCI_COLUMNS, na_values="?").assign(source=source)
+        for name, source in SOURCES.items()
+    ]
+    return pd.concat(frames, ignore_index=True)
+
+
+def to_kaggle_schema(uci: pd.DataFrame) -> pd.DataFrame:
+    """Rename and recode UCI columns to Kaggle's schema. `ca` and `thal` are dropped, as Kaggle did.
+
+    Missing values stay NaN; nothing is imputed or recoded to 0.
+    """
+    return pd.DataFrame({
+        "Age": uci["age"].astype(int),
+        "Sex": uci["sex"].map({1: "M", 0: "F"}),
+        "ChestPainType": uci["cp"].map({1: "TA", 2: "ATA", 3: "NAP", 4: "ASY"}),
+        "RestingBP": uci["trestbps"],
+        "Cholesterol": uci["chol"],
+        "FastingBS": uci["fbs"],
+        "RestingECG": uci["restecg"].map({0: "Normal", 1: "ST", 2: "LVH"}),
+        "MaxHR": uci["thalach"],
+        "ExerciseAngina": uci["exang"].map({1: "Y", 0: "N"}),
+        "Oldpeak": uci["oldpeak"],
+        "ST_Slope": uci["slope"].map({1: "Up", 2: "Flat", 3: "Down"}),
+        TARGET: (uci["num"] > 0).astype(int),
+        "source": uci["source"],
+    })
+
+
+def load_kaggle918(raw_dir: Path = RAW_DIR) -> pd.DataFrame:
+    """The published Kaggle CSV, unmodified."""
+    return pd.read_csv(fetch_raw(raw_dir) / "heart.csv")
+
+
+def missing_mask(df: pd.DataFrame) -> pd.DataFrame:
+    """Canonical missingness for either frame: NaN everywhere, plus 0 for RestingBP and Cholesterol."""
+    mask = df[FEATURES].isna()
+    for col in ZERO_MEANS_MISSING:
+        mask[col] |= df[col].eq(0)
+    return mask
