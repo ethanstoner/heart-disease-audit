@@ -1,0 +1,12 @@
+# Pinned to the versions this project's results were actually produced under.
+# An audit of other people's reproducibility should not have floating dependencies.
+pandas==3.0.5
+numpy==2.5.3
+scikit-learn==1.9.1
+xgboost==3.4.1
+scipy==1.18.1
+matplotlib==3.11.2
+seaborn==0.13.2
+tensorflow==2.21.0
+jupyter==1.1.1
+pytest==9.1.1
