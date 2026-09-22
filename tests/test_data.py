@@ -4,6 +4,7 @@ from heart_audit.data import (
     FEATURES,
     TARGET,
     load_kaggle918,
+    load_statlog270,
     load_uci920,
     missing_mask,
     to_kaggle_schema,
@@ -82,3 +83,13 @@ def test_kaggle_zero_cholesterol_is_a_disease_marker(kaggle):
     assert zero.sum() == 172
     assert round(kaggle.loc[zero, TARGET].mean() * 100, 1) == 88.4
     assert round(kaggle.loc[~zero, TARGET].mean() * 100, 1) == 47.7
+
+
+def test_statlog_is_a_recoded_copy_of_cleveland(raw_dir, uci):
+    statlog = load_statlog270(raw_dir)
+    assert statlog.shape == (270, 13)
+    assert statlog[TARGET].sum() == 120
+    key = [f for f in FEATURES if f != "ST_Slope"]
+    cleveland = uci[uci["source"] == "cleveland"][key].drop_duplicates()
+    merged = statlog[key].merge(cleveland, on=key, how="left", indicator=True)
+    assert (merged["_merge"] == "both").sum() == 270

@@ -12,13 +12,14 @@ def _copy_all_but(raw_dir, dest, missing):
             shutil.copy(raw_dir / name, dest / name)
 
 
-def test_all_five_files_are_pinned():
+def test_all_raw_files_are_pinned():
     assert sorted(RAW_FILES) == [
         "heart.csv",
         "processed.cleveland.data",
         "processed.hungarian.data",
         "processed.switzerland.data",
         "processed.va.data",
+        "statlog.heart.dat",
     ]
 
 

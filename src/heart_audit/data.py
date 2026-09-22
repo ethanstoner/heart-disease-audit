@@ -43,6 +43,12 @@ RAW_FILES = {
         "e7c93d8d0d2acdadfa4c5e8de768e2191e7f618b952e29623f1f0d5949ff6b8f",
     ),
     "heart.csv": (_KAGGLE_MIRRORS, "md5", "ab21f2524241ed14b321bcaf40c8b86e"),
+    # Statlog is a re-coded copy of Cleveland; used only for the counterfactual 1,190-row merge.
+    "statlog.heart.dat": (
+        ("https://archive.ics.uci.edu/ml/machine-learning-databases/statlog/heart/heart.dat",),
+        "sha256",
+        "f5f3b4204c285bafadd85cb735f38b47689f2be7047feb172dcbeab648110bf9",
+    ),
 }
 
 
@@ -161,3 +167,11 @@ def missing_mask(df: pd.DataFrame) -> pd.DataFrame:
     for col in ZERO_MEANS_MISSING:
         mask[col] |= df[col].eq(0)
     return mask
+
+
+def load_statlog270(raw_dir: Path = RAW_DIR) -> pd.DataFrame:
+    """Statlog heart data in the Kaggle schema, `source` = 'statlog'. Its class 2 is disease."""
+    raw = pd.read_csv(fetch_raw(raw_dir) / "statlog.heart.dat", sep=r"\s+", header=None,
+                      names=UCI_COLUMNS[:-1] + ["cls"])
+    raw["num"] = (raw.pop("cls") == 2).astype(int)
+    return to_kaggle_schema(raw.assign(source="statlog"))
