@@ -14,7 +14,7 @@ position,file,metric_name,metric_value,accuracy_value,value_source,eval_design,t
 22,022-1,accuracy,0.7016574585635359,0.7016574585635359,output,single_split,0.2,no,yes,random_forest,random_forest,1.0,no,none,default,yes,none,mixed,ignored,na,yes,yes,none,,none,no
 26,026-1,accuracy,0.88,0.88,output,single_split,0.2,no,yes,logistic_regression,logistic_regression,1.0,no,none,default,no,standard,onehot,dropped,na,no,na,none,,none,no
 28,028-1,accuracy,0.8623,0.8623,output,single_split,0.3,yes,yes,svm;logistic_regression;random_forest,svm,3.0,no,none,default,no,standard,mixed,ignored,na,no,na,none,,none,no
-31,031-1,accuracy,0.8278,0.8278,output,cv,,na,no,logistic_regression;decision_tree;random_forest;svm,random_forest,4.0,yes,none,default,yes,standard,onehot,ignored,na,no,na,none,,none,no
+31,031-1,accuracy,0.8278,0.8278,output,cv,,yes,no,logistic_regression;decision_tree;random_forest;svm,random_forest,4.0,yes,none,default,yes,standard,onehot,ignored,na,no,na,none,,none,no
 34,034-1,accuracy,0.8608695652173913,0.8608695652173913,output,single_split,0.25,no,no,logistic_regression,logistic_regression,1.0,no,none,default,na,none,onehot,ignored,na,no,na,none,,none,no
 36,036-1,accuracy,0.9057971014492754,0.9057971014492754,output,single_split,0.3,no,yes,knn,knn,1.0,no,none,set,yes,other,onehot,other,yes,no,na,none,,none,no
 38,038-1,accuracy,0.8804347826086957,0.8804347826086957,output,single_split,0.2,no,yes,mlp;random_forest;svm,random_forest,3.0,no,none,default,yes,standard,onehot,ignored,na,no,na,none,,none,no

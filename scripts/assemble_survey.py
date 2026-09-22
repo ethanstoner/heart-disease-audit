@@ -19,6 +19,12 @@ N_TARGET = 30
 # Deviation D1: functional copies of an earlier inclusion (file -> the inclusion it copies).
 E4_COPIES = {"010-1": "005-1", "016-1": "005-1", "035-1": "005-1", "037-1": "005-1", "061-1": "005-1"}
 
+# Researcher resolutions, applied over the first coding: (file, field) -> (value, reason).
+RESOLUTIONS = {
+    ("041-1", "stratify"): ("yes", "double-coding disagreement: cv=5 on a classifier is StratifiedKFold"),
+    ("031-1", "stratify"): ("yes", "consistency (D3): cv=5 on a classifier is StratifiedKFold"),
+}
+
 
 def load(paths: list[str]) -> list[dict]:
     records = [r for p in paths for r in json.loads(Path(p).read_text(encoding="utf-8"))]
@@ -26,6 +32,12 @@ def load(paths: list[str]) -> list[dict]:
     for r in records:
         r["file"] = r["file"].removesuffix(".txt")
     return records
+
+
+def resolve(records: list[dict]) -> None:
+    by_file = {r["file"]: r for r in records}
+    for (f, field), (value, _) in RESOLUTIONS.items():
+        by_file[f]["coding"][field] = value
 
 
 def screen(records: list[dict], e4: dict[str, str]) -> pd.DataFrame:
@@ -62,6 +74,7 @@ def main() -> None:
         if r["decision"] == "include" and (bad := rubric_violations(r["coding"])):
             raise SystemExit(f"{r['file']}: {bad}")
     (SURVEY / "coder_output.json").write_text(json.dumps(records, indent=1, ensure_ascii=False), encoding="utf-8")
+    resolve(records)
 
     primary = screen(records, E4_COPIES)
     primary[["position", "file", "repo", "path", "ref", "html_url", "decision", "criterion", "evidence"]].to_csv(

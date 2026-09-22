@@ -45,3 +45,20 @@ as a sensitivity analysis of the reproduction gate.
 5 and differs only in the ways listed above, so it is excluded under D1. Positions 22 and 54
 (the same PCA exercise) differ functionally: one ordinal-encodes three columns and the other
 one-hot encodes all of them. Both are retained.
+
+## D3 — Consistency correction to `stratify` for cross-validated notebooks (2026-09-22)
+
+**When:** while resolving the double-coding disagreements, before any field was aggregated.
+
+The only double-coding disagreement (position 41, `stratify`: `yes` vs `na`) exposed an
+inconsistency. All three notebooks whose headline value comes from cross-validation
+(positions 31, 41, 47) use `cross_val_score(..., cv=<int>)` on a classifier, which sklearn
+runs as `StratifiedKFold`. Positions 41 and 47 were coded `yes`; position 31 was coded `na`
+by both coders. The factually correct value, `yes`, is applied to all three. Position 31 is
+changed even though its two codings agreed, and this is outside the protocol's
+disagreement-resolution step. Every override is listed in `RESOLUTIONS` in
+`scripts/assemble_survey.py`.
+
+**Caveat on reliability:** both coders are instances of the same language model working from
+the same protocol. The 99.6% agreement (249/250 field values) measures how clear the rubric is
+and how consistently it is applied. It is not agreement between independent human judges.

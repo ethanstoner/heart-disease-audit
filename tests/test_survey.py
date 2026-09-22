@@ -1,6 +1,10 @@
+from pathlib import Path
+
 import pandas as pd
 
 from heart_audit.survey import RUBRIC, SEED, modal_pipeline, rubric_violations, screening_order
+
+ROOT = Path(__file__).resolve().parents[1]
 
 
 def _item(repo, path, fork=False):
@@ -60,3 +64,15 @@ def test_rubric_violations_are_reported():
     assert rubric_violations(good) == []
     bad = dict(good, metric_value=85.0, models="knn;catboostz", dedup="maybe")
     assert sorted(v.split(":")[0] for v in rubric_violations(bad)) == ["dedup", "metric_value", "models"]
+
+
+def test_committed_coding_is_complete_and_valid():
+    coding = pd.read_csv(ROOT / "survey" / "coding.csv", keep_default_na=False, na_values=[""])
+    assert len(coding) == 30
+    assert coding["file"].is_unique
+    for row in coding.to_dict("records"):
+        row["n_models"] = int(row["n_models"])
+        row["features_dropped"] = "" if pd.isna(row["features_dropped"]) else row["features_dropped"]
+        for f in ("accuracy_value", "test_size"):
+            row[f] = None if pd.isna(row[f]) else row[f]
+        assert rubric_violations(row) == [], row["file"]
