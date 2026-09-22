@@ -15,6 +15,7 @@ import numpy as np
 import pandas as pd
 from sklearn.compose import ColumnTransformer
 from sklearn.impute import SimpleImputer
+from sklearn.metrics import roc_auc_score
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import GridSearchCV, LeaveOneGroupOut, RepeatedStratifiedKFold
 from sklearn.neighbors import KNeighborsClassifier
@@ -72,6 +73,7 @@ class OuterFit:
     train_threshold: dict[int, float] = field(default_factory=dict)   # Youden on training rows
     best_params: list[dict] = field(default_factory=list)
     fold_auc: list[float] = field(default_factory=list)
+    fold_oof: list[np.ndarray] = field(default_factory=list)      # per-fold predictions (repeated CV)
 
 
 def youden_threshold(y, p) -> float:
@@ -87,8 +89,6 @@ def youden_threshold(y, p) -> float:
 
 def nested_fit(frame: pd.DataFrame, arm: Arm, model: str, splits, seed: int, n_jobs: int = 1) -> OuterFit:
     """Outer loop over `splits` (train, test index pairs); inner leave-one-site-out grid search."""
-    from sklearn.metrics import roc_auc_score
-
     X, y, groups = design(frame, arm), frame[TARGET].to_numpy(), frame["source"].to_numpy()
     make, grid = GRIDS[model]
     oof, fold = np.full(len(y), np.nan), np.full(len(y), -1)
@@ -99,6 +99,7 @@ def nested_fit(frame: pd.DataFrame, arm: Arm, model: str, splits, seed: int, n_j
         search.fit(X.iloc[train], y[train], groups=groups[train])
         p = search.predict_proba(X.iloc[test])[:, 1]
         oof[test], fold[test] = p, k
+        out.fold_oof.append(p)
         out.best_params.append(search.best_params_)
         out.train_threshold[k] = youden_threshold(y[train], search.predict_proba(X.iloc[train])[:, 1])
         out.fold_auc.append(float(roc_auc_score(y[test], p)) if len(np.unique(y[test])) == 2 else np.nan)
