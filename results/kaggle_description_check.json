@@ -1,0 +1,19 @@
+{
+ "checked_at": "2026-09-22T21:02:48.754458+00:00",
+ "url": "https://www.kaggle.com/api/v1/datasets/view/fedesoriano/heart-failure-prediction",
+ "description_chars": 3992,
+ "dataset_last_updated": "2021-09-10T18:11:57.517Z",
+ "term_counts": {
+  "missing": 0,
+  "imput": 0,
+  "fill": 0,
+  "?": 0,
+  "NaN": 0,
+  "null": 0,
+  "zero": 0,
+  "duplicat": 1,
+  "1190": 1,
+  "918": 1
+ },
+ "discloses_missing_or_imputation": false
+}

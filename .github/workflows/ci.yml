@@ -1,0 +1,28 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install
+        run: |
+          pip install -r requirements.txt
+          pip install -e .
+      - name: Tests (fetches and hash-verifies the raw data)
+        run: pytest -q
+      - name: Notebooks execute end to end
+        run: |
+          mkdir -p /tmp/executed
+          for nb in notebooks/*.ipynb; do
+            jupyter nbconvert --execute --to notebook --output-dir /tmp/executed "$nb"
+          done
