@@ -1,0 +1,18 @@
+{
+ "shuffles": 50,
+ "required_intervals_containing_0.5": 44,
+ "pooled_oof_auc": {
+  "mean": 0.48856485929665056,
+  "min": 0.43212682661006985,
+  "max": 0.5439892160096367,
+  "intervals_containing_0.5": 42,
+  "passes": false
+ },
+ "within_site_auc": {
+  "mean": 0.49537129605936103,
+  "min": 0.44302207826271356,
+  "max": 0.5581988404324576,
+  "intervals_containing_0.5": 44,
+  "passes": true
+ }
+}

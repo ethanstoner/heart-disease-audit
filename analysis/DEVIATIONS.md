@@ -52,3 +52,7 @@ the null, and gives the within-site comparison next to it.
   predictions, while standardisation gives 128/36,800. The differences come from
   floating-point rounding in the affine rescale flipping tied splits (the one-hot encoding has
   two complementary column pairs), not from test-row information.
+
+**Reproduced by committed code** (`scripts/shuffled_label_gate.py` →
+`results/shuffled_label_gate.json`): pooled 0.4886, 42/50; within-site 0.4954, 44/50. The
+within-site estimator passes the gate with no margin: 44 is exactly the minimum.
