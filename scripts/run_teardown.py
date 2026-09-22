@@ -146,6 +146,9 @@ def main() -> None:
                    "median_grouped": float(np.median([r.accuracy["random_forest"] for r in grp])),
                    "contamination_median": float(np.median(cont))}
     res["P3.1"]["verdict"] = "supported" if res["P3.1"]["median_random"] > res["P3.1"]["median_grouped"] else "falsified"
+    pd.DataFrame({"seed": seeds, "random": [r.accuracy["random_forest"] for r in rand],
+                  "grouped": [r.accuracy["random_forest"] for r in grp], "contamination": cont}).to_csv(
+        OUT / "t3_seeds.csv", index=False)
     print(f"T3 done {time.perf_counter() - start:.0f}s")
 
     # ---- T4 ------------------------------------------------------------------------------
