@@ -40,3 +40,8 @@ post-PCA value, which is usually lower (for example 0.8611 rather than 0.9444).
 **Decision:** no deviation. The pre-registered reading is primary. The alternative, the
 headline model's best shown test value, is recorded in each notebook's `notes` and reported
 as a sensitivity analysis of the reproduction gate.
+
+**Applied again after screening repositories 51–62:** position 61 is the same lab as position
+5 and differs only in the ways listed above, so it is excluded under D1. Positions 22 and 54
+(the same PCA exercise) differ functionally: one ordinal-encodes three columns and the other
+one-hot encodes all of them. Both are retained.
