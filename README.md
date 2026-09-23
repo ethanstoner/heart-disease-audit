@@ -1,12 +1,21 @@
-# Heart Disease Prediction: An Audit
+# Heart Disease Prediction: A Reproducibility Audit
 
-The Kaggle "Heart Failure Prediction" CSV is one of the most-used tabular datasets on GitHub.
-Published notebooks report around 86% accuracy on it. This project finds that **every missing
-value in the source data was filled in, and in four columns the filled value was decided by the
-diagnosis itself**. The dataset's description never mentions either. About 7 points of the
-reported accuracy come from those filled values.
+[![CI](https://github.com/ethanstoner/heart-disease-audit/actions/workflows/ci.yml/badge.svg)](https://github.com/ethanstoner/heart-disease-audit/actions/workflows/ci.yml)
 
-![Filled-in values decided by the diagnosis](images/fill_rule.png)
+**Python · pandas · scikit-learn · SciPy · pytest · GitHub Actions**
+
+An audit of the Kaggle "Heart Failure Prediction" CSV, one of the most-used tabular ML datasets
+on GitHub. It traces the published data back to its four UCI hospital sources and measures how
+dataset construction, preprocessing, split variance and hospital leakage affect the accuracy
+people report for it.
+
+**Key result.** Every value missing from the UCI sources, in the columns the CSV keeps, was
+filled in, and in four columns the filled value matches the diagnosis perfectly. The dataset's
+description mentions neither. In the typical published pipeline, reverting the 644 recovered
+filled cells to missing lowers median random-forest accuracy from **86.4% to 79.3%** across
+1,000 paired train/test splits.
+
+![The filled-in values encode the diagnosis](images/fill_rule.png)
 
 The deliverable is a set of findings, not a better accuracy score. Every number below comes
 from committed code that was run, and every experiment's prediction was committed before the
@@ -37,7 +46,8 @@ experiment ran.
 - Take the typical published pipeline, with missing values imputed from training rows only.
   Reverting the 644 filled cells to missing lowers its median random-forest accuracy from 86.4%
   to 79.3%: a median paired drop of **7.1 points** (central 95% over 1,000 splits: 2.2 to
-  12.5).
+  12.5). This is a paired difference for one pipeline, not a new "true" accuracy; finding 4
+  gives the honest estimate.
 
 This shows what the filled values do. It does not identify how they were produced.
 
@@ -61,7 +71,7 @@ A pre-registered survey (`survey/PROTOCOL.md`, committed before the search was r
 
 ![Effect of each practice](images/effect_summary.png)
 
-- The label-decided fill is the largest effect in the published CSV.
+- The label-encoding fill is the largest effect in the published CSV.
 - Reporting the best of four models on one test set (10 of 30 notebooks) overstates accuracy
   by 1.5 points on average (winner's-curse bootstrap).
 - Fitting the scaler before the split, the leak textbooks warn about most, changes nothing
@@ -139,8 +149,21 @@ of within-hospital AUCs (D6). It averages 0.495 and passes with no margin: 44 of
   search caps results at 1,000 and skips large files, so the sample is not uniform.
 - The Kaggle CSV was retrieved from two public GitHub mirrors pinned by commit, verified by an
   md5 shared across five independent copies, not from the Kaggle API.
-- The CI workflow (`.github/workflows/ci.yml`) is included but has not yet run on GitHub. Its
-  steps were run locally.
+
+## Engineering
+
+- Raw data pinned by SHA-256 / md5 and verified on every load; a mismatch stops the run.
+- A provenance matcher that pairs published rows one-to-one with their UCI source rows,
+  validated on a field left out of the match.
+- Every experiment seed derived from one master seed; re-running the 1,000-split teardown
+  reproduces its results.
+- A paired multi-seed experiment runner, parallelised across CPU cores.
+- Bootstrap, DeLong, McNemar, Nadeau–Bengio and Holm implementations, each tested against a
+  hand-computed or brute-force answer.
+- Tests of the statistics themselves: interval coverage, Type-I error rate and a
+  shuffled-label gate.
+- Nested cross-validation with hospital-aware tuning.
+- 77 tests and all five notebooks run on every push in GitHub Actions.
 
 ## Reproduce
 

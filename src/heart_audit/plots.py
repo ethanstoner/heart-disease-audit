@@ -135,9 +135,9 @@ def fill_rule(panels: list[dict], path: Path) -> Path:
         ax.set_title(p["title"], loc="left", fontsize=10, color=TEXT)
     np.atleast_1d(axes)[0].set_ylabel("share with heart disease", color=TEXT_2, fontsize=9)
     handles = [plt.Rectangle((0, 0), 1, 1, color=SERIES_2), plt.Rectangle((0, 0), 1, 1, color=SERIES_1)]
-    fig.legend(handles, ["value filled in by the dataset author", "value recorded in the UCI source"],
+    fig.legend(handles, ["value filled in the published CSV", "value recorded in the UCI source"],
                loc="upper right", bbox_to_anchor=(0.98, 0.9), frameon=False, fontsize=9, ncol=2)
-    fig.suptitle("The filled-in values were decided by the diagnosis", x=0.02, ha="left",
+    fig.suptitle("The filled-in values encode the diagnosis", x=0.02, ha="left",
                  fontsize=12, color=TEXT, fontweight="bold")
     fig.tight_layout(rect=(0, 0, 1, 0.86))
     return _save(fig, path)
